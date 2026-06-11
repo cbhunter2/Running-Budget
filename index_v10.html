@@ -1,0 +1,989 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+<meta name="theme-color" content="#000000" />
+<title>Financial Recovery Dashboard</title>
+<style>
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+:root{--black:#000;--white:#fff;--muted:#666;--soft:#f7f7f7}
+html,body{margin:0;background:#fff;color:#000;font-family:-apple-system,BlinkMacSystemFont,"Helvetica Neue",Arial,sans-serif}
+body{padding-bottom:98px}
+.app-shell{max-width:520px;margin:0 auto;padding:18px 15px 28px}
+.app-header{border-bottom:1px solid #000;padding:18px 0 15px}
+.kicker{font-size:10px;text-transform:uppercase;letter-spacing:.18em;color:#666;font-weight:700}
+h1{margin:8px 0 6px;font-size:36px;line-height:.94;font-weight:500;letter-spacing:-.075em}
+p{font-size:13px;line-height:1.38;color:#666;margin:0}
+.scenario-strip{display:flex;gap:8px;overflow-x:auto;padding:14px 0;scrollbar-width:none}
+.scenario-strip::-webkit-scrollbar{display:none}
+button{font:inherit}
+.scenario-btn,.primary-btn,.secondary-btn,.mini-btn{border:1px solid #000;border-radius:0;background:#fff;color:#000;padding:11px 12px;font-size:12px;text-transform:uppercase;letter-spacing:.07em}
+.scenario-btn{white-space:nowrap}
+.scenario-btn.active,.primary-btn{background:#000;color:#fff}
+.secondary-btn{width:100%;margin:10px 0;background:#fff;color:#000}
+.mini-btn{font-size:10px;padding:10px 7px}
+.view{display:none}
+.view.active{display:block}
+.card{border:1px solid #000;padding:14px;margin:14px 0;background:#fff}
+.card-head{display:flex;justify-content:space-between;align-items:baseline;border-bottom:1px solid #000;padding-bottom:10px;margin-bottom:12px;gap:12px}
+.card-head h2{margin:0;font-size:14px;text-transform:uppercase;letter-spacing:.1em}
+.card-head span{font-size:11px;color:#666;text-transform:uppercase;letter-spacing:.08em}
+.metric-grid{display:grid;grid-template-columns:1fr 1fr;border:1px solid #000;border-bottom:0;border-right:0}
+.metric{border-right:1px solid #000;border-bottom:1px solid #000;padding:12px 10px;min-height:76px}
+.metric span{display:block;color:#666;font-size:10px;text-transform:uppercase;letter-spacing:.08em}
+.metric strong{display:block;margin-top:8px;font-size:24px;font-weight:500;letter-spacing:-.06em}
+.status{border:1px solid #000;margin-top:12px;padding:11px;font-size:12px;line-height:1.35;color:#000}
+.status.good{background:#f7f7f7}.status.tight{background:#fff}.status.bad{background:#fff}
+.quick-edit{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px}
+.quick-edit label{font-size:11px;text-transform:uppercase;letter-spacing:.08em;color:#666}
+.quick-edit input{margin-top:6px}
+h3{margin:14px 0 8px;font-size:12px;text-transform:uppercase;letter-spacing:.09em}
+.table{border:1px solid #000;border-bottom:0}
+.table-row{display:grid;grid-template-columns:1.2fr .8fr;border-bottom:1px solid #000}
+.table-row div{padding:10px;font-size:13px}
+.table-row div:last-child{text-align:right;font-weight:600}
+.note{font-size:12px;color:#666;line-height:1.35;margin-top:10px}
+.expense-list{border:1px solid #000;border-bottom:0;margin-top:10px}
+.income-item,.expense-item{display:grid;grid-template-columns:1.15fr .65fr 34px;gap:8px;padding:8px;border-bottom:1px solid #000}
+.income-item select:first-of-type,.expense-item select:first-of-type{grid-column:1/2}.income-item select:last-of-type,.expense-item select:last-of-type{grid-column:2/4}
+input,select{width:100%;border:1px solid #000;border-radius:0;background:#fff;color:#000;padding:10px 8px;font-size:15px;outline:0}
+input{text-align:right}
+input[type=text]{text-align:left}
+.income-item input,.expense-item input{font-size:13px;padding:9px 7px}
+.remove{border:1px solid #000;background:#fff;color:#000;padding:0;font-size:16px}
+.primary-btn{width:100%;margin-top:10px}
+.input-row{display:grid;grid-template-columns:1.1fr .9fr;gap:10px;align-items:center;border-bottom:1px solid #eee;padding:10px 0;font-size:13px;color:#666}
+.input-row:last-child{border-bottom:0}
+.money-input{display:flex;border:1px solid #000;align-items:center;background:#fff}
+.money-input span{padding-left:9px;color:#666;font-size:14px}
+.money-input input{border:0;padding-left:3px}
+.progress-block{margin:13px 0}
+.progress-label{display:flex;justify-content:space-between;font-size:11px;text-transform:uppercase;letter-spacing:.07em;color:#666;margin-bottom:6px}
+.progress{height:9px;border:1px solid #000;background:#fff}
+.fill{height:100%;background:#000;width:0%}
+.readiness{font-size:52px;line-height:.9;letter-spacing:-.08em;font-weight:500}
+.bottom-nav{position:fixed;left:50%;bottom:max(10px,env(safe-area-inset-bottom));transform:translateX(-50%);width:min(520px,calc(100vw - 20px));display:grid;grid-template-columns:repeat(5,1fr);border:1px solid #000;background:#fff;z-index:9999}
+.nav{border:0;border-right:1px solid #000;background:#fff;color:#000;padding:13px 2px;font-size:10px;text-transform:uppercase;letter-spacing:.06em}
+.nav:last-child{border-right:0}.nav.active{background:#000;color:#fff}
+.preset-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:7px}
+.small-recalc{grid-column:1/-1;margin:0;padding:10px;font-size:10px}
+
+.income-card{border-bottom:1px solid #000;padding:10px}
+.income-card:last-child{border-bottom:0}
+.income-top{display:grid;grid-template-columns:1fr .65fr 34px;gap:8px;margin-bottom:8px}
+.income-controls{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px}
+.alloc-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:8px}
+.alloc-grid label{font-size:10px;text-transform:uppercase;letter-spacing:.07em;color:#666}
+.alloc-grid input{margin-top:4px}
+.suggestion{border:1px solid #000;padding:9px;margin-top:8px;font-size:12px;line-height:1.35;background:#f7f7f7}
+
+@media(max-width:390px){h1{font-size:32px}.metric strong{font-size:21px}.app-shell{padding-left:12px;padding-right:12px}.quick-edit{grid-template-columns:1fr}}
+</style>
+</head>
+
+<body>
+<div class="app-shell">
+<header class="app-header">
+  <div class="kicker">Financial Recovery System</div>
+  <h1>Six Month<br>Money Map</h1>
+  <p>Minimal dashboard for income, bills, debt payoff, savings funds, trading payouts, and move readiness.</p>
+</header>
+
+<div class="scenario-strip" id="scenarioStrip"></div>
+
+<main class="view active" id="home">
+  <section class="card">
+    <div class="card-head"><h2>Home</h2><span id="activeScenarioLabel">Jeff Co</span></div>
+    <div class="quick-edit">
+      <label>Hourly Pay <div class="money-input"><span>$</span><input id="homeHourly" type="number" step="0.01"></div></label>
+      <label>Hours / Week <input id="homeHours" type="number" step="0.5"></label>
+      <label>Deduction % <input id="homeDeduction" type="number" step="0.5"></label>
+      <label>Biweekly Net <div class="money-input"><span>$</span><input id="homeBiweeklyNet" type="number"></div></label>
+      <button type="button" class="secondary-btn small-recalc" id="recalcEstimateBtn">Recalculate Estimate</button>
+    </div>
+    <div class="metric-grid">
+      <div class="metric"><span>Net Income</span><strong id="monthlyIncome">$0</strong></div>
+      <div class="metric"><span>Expenses</span><strong id="monthlyExpenses">$0</strong></div>
+      <div class="metric"><span>Surplus</span><strong id="monthlySurplus">$0</strong></div>
+      <div class="metric"><span>Safety</span><strong id="safetyStatus">—</strong></div>
+    </div>
+    <div id="statusCard" class="status"></div>
+    <div class="status good" id="bufferStatus">Buffer Account Projection: $0</div>
+    <div class="status good" id="extraCheckNote">Budget uses a normal 2-check month. Your 2 extra paychecks each year should be treated as bonus debt/savings acceleration.</div>
+  </section>
+
+  <section class="card">
+    <div class="card-head"><h2>Balances After 6 Months</h2><span>Live forecast</span></div>
+    <div class="metric-grid">
+      <div class="metric"><span>Mom Debt Left</span><strong id="momDebt6">$0</strong></div>
+      <div class="metric"><span>Your Debt Left</span><strong id="personalDebt6">$0</strong></div>
+      <div class="metric"><span>Emergency</span><strong id="emergency6">$0</strong></div>
+      <div class="metric"><span>Move Cushion</span><strong id="moveCushion6">$0</strong></div>
+      <div class="metric"><span>Travel Fund</span><strong id="travel6">$0</strong></div>
+      <div class="metric"><span>Car Fund</span><strong id="car6">$0</strong></div>
+    </div>
+  </section>
+
+  <section class="card">
+    <div class="card-head"><h2>Goal Progress</h2><span id="readinessSmall">0%</span></div>
+    <div id="goalBars"></div>
+  </section>
+
+  <section class="card">
+    <div class="card-head"><h2>Timeline</h2><span>Payoff estimate</span></div>
+    <div class="table" id="timelineTable"></div>
+  </section>
+</main>
+
+<main class="view" id="pay">
+  <section class="card">
+    <div class="card-head"><h2>Job Setup</h2><span>Edit current tab</span></div>
+    <label class="input-row">Job Name <input id="jobName" type="text"></label>
+    <label class="input-row">Hourly Pay <div class="money-input"><span>$</span><input id="hourlyPay" type="number" step="0.01"></div></label>
+    <label class="input-row">Hours / Week <input id="hoursWeek" type="number" step="0.5"></label>
+    <label class="input-row">Estimated Deductions % <input id="deductionRate" type="number" step="0.5"></label>
+    <label class="input-row">Use Manual Net Pay <select id="manualNetOn"><option value="no">No</option><option value="yes">Yes</option></select></label>
+    <label class="input-row">Manual Biweekly Net <div class="money-input"><span>$</span><input id="manualBiweeklyNet" type="number"></div></label>
+    <p class="note">Once your first real paycheck hits, turn manual net pay on and enter the exact deposit.</p>
+  </section>
+
+  <section class="card">
+    <div class="card-head"><h2>Paycheck Checklist</h2><span id="biweeklyAmount">$0/check</span></div>
+    <h3>Check 1 · Beginning of Month</h3>
+    <div class="table" id="checkOneTable"></div>
+    <h3>Check 2 · End of Month</h3>
+    <div class="table" id="checkTwoTable"></div>
+    <div class="status good" id="navyNote"></div>
+  </section>
+</main>
+
+<main class="view" id="bills">
+  <section class="card">
+    <div class="card-head"><h2>Bills + Funds</h2><span id="expenseTotalLabel">$0</span></div>
+    <div class="preset-grid">
+      <button type="button" class="mini-btn" data-preset="bill">Add Bill</button>
+      <button type="button" class="mini-btn" data-preset="debt">Add Debt</button>
+      <button type="button" class="mini-btn" data-preset="savings">Add Savings</button>
+      <button type="button" class="mini-btn" data-preset="car">Add Car</button>
+    </div>
+    <div id="expenseList" class="expense-list"></div>
+    <button type="button" class="primary-btn" id="addExpenseBtn">Add Custom Expense</button>
+    <p class="note">Categories connect the math: Mom Debt, Personal Debt, Emergency, Travel, Car Fund, Move Fund, and Regular Bills.</p>
+  </section>
+</main>
+
+<main class="view" id="addons">
+  <section class="card">
+    <div class="card-head"><h2>Trading Add-On</h2><span>Optional</span></div>
+    <label class="input-row">Use Trading <select id="tradingOn"><option value="no">No</option><option value="yes">Yes</option></select></label>
+    <label class="input-row">Profit Target / Day <div class="money-input"><span>$</span><input id="profitDay" type="number" value="300"></div></label>
+    <label class="input-row">Trading Days / Week <input id="tradeDays" type="number" value="4"></label>
+    <label class="input-row">Win Rate % <input id="winRate" type="number" value="75"></label>
+    <label class="input-row">Payout Split % <input id="payoutSplit" type="number" value="80"></label>
+    <label class="input-row">Realism Haircut % <input id="haircut" type="number" value="20"></label>
+  </section>
+
+  <section class="card">
+    <div class="card-head"><h2>Payout Splitter</h2><span>When payout hits</span></div>
+    <label class="input-row">Payout Amount <div class="money-input"><span>$</span><input id="payoutAmount" type="number" value="0"></div></label>
+    <label class="input-row">Mom % <input id="splitMom" type="number" value="50"></label>
+    <label class="input-row">Personal Debt % <input id="splitPersonal" type="number" value="25"></label>
+    <label class="input-row">Emergency % <input id="splitEmergency" type="number" value="15"></label>
+    <label class="input-row">Travel % <input id="splitTravel" type="number" value="5"></label>
+    <label class="input-row">Car Fund % <input id="splitCar" type="number" value="5"></label>
+    <div class="table" id="payoutSplitTable"></div>
+  </section>
+
+  <section class="card">
+    <div class="card-head"><h2>Part-Time Add-On</h2><span>Optional</span></div>
+    <label class="input-row">Use Part-Time <select id="partTimeOn"><option value="no">No</option><option value="yes">Yes</option></select></label>
+    <label class="input-row">Hourly Pay <div class="money-input"><span>$</span><input id="ptRate" type="number" value="20"></div></label>
+    <label class="input-row">Hours / Week <input id="ptHours" type="number" value="12"></label>
+    <label class="input-row">Flat Monthly Override <div class="money-input"><span>$</span><input id="ptFlat" type="number" value="1000"></div></label>
+  </section>
+
+  <section class="card">
+    <div class="card-head"><h2>Income Ledger</h2><span>Anything extra</span></div>
+    <div id="incomeList" class="expense-list"></div>
+    <button type="button" class="primary-btn" id="addIncomeBtn">Add Income</button>
+    <p class="note">Add closings, trading payouts, part-time money, gift money, refunds, bonuses, or anything else. Frequency controls whether it counts once or repeats monthly.</p>
+  </section>
+
+  <section class="card">
+    <div class="card-head"><h2>Income Totals</h2><span>Live</span></div>
+    <div class="table" id="incomeSummaryTable"></div>
+  </section>
+
+  <section class="card">
+    <div class="card-head"><h2>Windfall Rules</h2><span>Auto split</span></div>
+    <label class="input-row">Mode <select id="windfallMode"><option value="debt">Debt Attack</option><option value="balanced">Balanced</option><option value="move">Move Out</option><option value="custom">Custom</option></select></label>
+    <div class="table" id="windfallRuleTable"></div>
+    <p class="note">Use Debt Attack while personal debt and Mom debt are high. Switch modes as your balances improve.</p>
+  </section>
+</main>
+
+<main class="view" id="goals">
+  <section class="card">
+    <div class="card-head"><h2>Starting Balances</h2><span>Editable</span></div>
+    <label class="input-row">Mom Debt Balance <div class="money-input"><span>$</span><input id="momDebtStart" type="number" value="25000"></div></label>
+    <label class="input-row">Personal Debt Balance <div class="money-input"><span>$</span><input id="personalDebtStart" type="number" value="5000"></div></label>
+    <label class="input-row">Emergency Savings <div class="money-input"><span>$</span><input id="emergencyStart" type="number" value="0"></div></label>
+    <label class="input-row">Travel Fund <div class="money-input"><span>$</span><input id="travelStart" type="number" value="0"></div></label>
+    <label class="input-row">Car Fund <div class="money-input"><span>$</span><input id="carStart" type="number" value="0"></div></label>
+    <label class="input-row">Move Fund <div class="money-input"><span>$</span><input id="moveStart" type="number" value="0"></div></label>
+    <label class="input-row">Closing Cushion <div class="money-input"><span>$</span><input id="closingCushion" type="number" value="440"></div></label>
+  </section>
+
+  <section class="card">
+    <div class="card-head"><h2>6 Month Targets</h2><span>Realistic</span></div>
+    <label class="input-row">Mom Debt Paid Goal <div class="money-input"><span>$</span><input id="momGoal" type="number" value="12000"></div></label>
+    <label class="input-row">Personal Debt Paid Goal <div class="money-input"><span>$</span><input id="personalGoal" type="number" value="3000"></div></label>
+    <label class="input-row">Emergency Goal <div class="money-input"><span>$</span><input id="emergencyGoal" type="number" value="5000"></div></label>
+    <label class="input-row">Move Cushion Goal <div class="money-input"><span>$</span><input id="moveGoal" type="number" value="10000"></div></label>
+  </section>
+
+  <section class="card">
+    <div class="card-head"><h2>Apartment Readiness</h2><span>Live score</span></div>
+    <div class="readiness" id="readiness">0%</div>
+    <p id="readinessText" class="note"></p>
+    <div class="table" id="predictionTable"></div>
+  </section>
+
+  <section class="card">
+    <div class="card-head"><h2>Net Worth Tracker</h2><span>Live</span></div>
+    <div class="metric-grid">
+      <div class="metric"><span>Total Assets</span><strong id="totalAssets">$0</strong></div>
+      <div class="metric"><span>Total Debt</span><strong id="totalDebt">$0</strong></div>
+      <div class="metric"><span>Net Worth Now</span><strong id="netWorthNow">$0</strong></div>
+      <div class="metric"><span>Net Worth 6 Mo.</span><strong id="netWorth6">$0</strong></div>
+    </div>
+  </section>
+
+  <section class="card">
+    <div class="card-head"><h2>Cash Flow Timeline</h2><span>Next 6 months</span></div>
+    <div class="table" id="cashFlowTable"></div>
+  </section>
+
+  <button type="button" class="secondary-btn" id="resetBtn">Reset Saved Data</button>
+</main>
+</div>
+
+<nav class="bottom-nav">
+  <button type="button" class="nav active" data-view="home">Home</button>
+  <button type="button" class="nav" data-view="pay">Pay</button>
+  <button type="button" class="nav" data-view="bills">Bills</button>
+  <button type="button" class="nav" data-view="addons">Add</button>
+  <button type="button" class="nav" data-view="goals">Goals</button>
+</nav>
+
+<script>
+(function(){
+"use strict";
+
+var STORE_KEY = "financialRecoveryDashboardV10";
+
+var defaultState = {
+  scenario: "jeff",
+  scenarios: [
+    { id: "jeff", name: "Job #1", hourly: 20.82, hours: 40, deductionRate: 25, manualNetOn: "no", manualBiweeklyNet: 1250 },
+    { id: "thrivent", name: "Job #2", hourly: 27, hours: 40, deductionRate: 27, manualNetOn: "no", manualBiweeklyNet: 1575 },
+    { id: "misc", name: "Job #3", hourly: 25, hours: 40, deductionRate: 25, manualNetOn: "no", manualBiweeklyNet: 1450 }
+  ],
+  expenses: [
+    { name: "Mom Debt", amount: 650, timing: "split", category: "mom" },
+    { name: "Personal Debt", amount: 250, timing: "split", category: "personal" },
+    { name: "Emergency Savings", amount: 250, timing: "split", category: "emergency" },
+    { name: "Travel Fund", amount: 0, timing: "split", category: "travel" },
+    { name: "Car Fund", amount: 0, timing: "split", category: "carfund" },
+    { name: "Move Fund", amount: 0, timing: "split", category: "move" },
+    { name: "Car Insurance Hold", amount: 400, timing: "split", category: "carfund" },
+    { name: "Storage", amount: 125, timing: "check1", category: "bill" },
+    { name: "Gym", amount: 25, timing: "check1", category: "bill" },
+    { name: "Nails", amount: 130, timing: "check1", category: "bill" },
+    { name: "TradingView", amount: 45, timing: "check1", category: "bill" },
+    { name: "Wax", amount: 165, timing: "check2", category: "bill" },
+    { name: "Dog Grooming", amount: 88, timing: "check2", category: "bill" },
+    { name: "Apple", amount: 75, timing: "check2", category: "bill" },
+    { name: "Gas/Food/Misc", amount: 200, timing: "split", category: "bill" }
+  ],
+  incomeEntries: [
+    { name: "Closing", amount: 0, frequency: "one-time", allocation: "split", useActual: "no", actualMom: 0, actualPersonal: 0, actualEmergency: 0, actualMove: 0, actualTravel: 0, actualCar: 0, actualBuffer: 0 },
+    { name: "Trading Payout", amount: 0, frequency: "one-time", allocation: "split", useActual: "no", actualMom: 0, actualPersonal: 0, actualEmergency: 0, actualMove: 0, actualTravel: 0, actualCar: 0, actualBuffer: 0 },
+    { name: "Gift Money", amount: 0, frequency: "one-time", allocation: "buffer", useActual: "no", actualMom: 0, actualPersonal: 0, actualEmergency: 0, actualMove: 0, actualTravel: 0, actualCar: 0, actualBuffer: 0 },
+    { name: "Part-Time / Side Income", amount: 0, frequency: "monthly", allocation: "buffer", useActual: "no", actualMom: 0, actualPersonal: 0, actualEmergency: 0, actualMove: 0, actualTravel: 0, actualCar: 0, actualBuffer: 0 }
+  ],
+  inputs: {
+    tradingOn: "no", profitDay: 300, tradeDays: 4, winRate: 75, payoutSplit: 80, haircut: 20,
+    payoutAmount: 0, splitMom: 50, splitPersonal: 25, splitEmergency: 15, splitTravel: 5, splitCar: 5,
+    partTimeOn: "no", ptRate: 20, ptHours: 12, ptFlat: 1000,
+    momDebtStart: 25000, personalDebtStart: 5000, emergencyStart: 0, travelStart: 0, carStart: 0, moveStart: 0, closingCushion: 440,
+    momGoal: 12000, personalGoal: 3000, emergencyGoal: 5000, moveGoal: 10000, windfallMode: "debt"
+  }
+};
+
+var state = loadState();
+
+function $(id){ return document.getElementById(id); }
+function num(v){ return Number(v || 0); }
+function money(n){ return "$" + Math.round(Number(n || 0)).toLocaleString(); }
+function clone(obj){ return JSON.parse(JSON.stringify(obj)); }
+
+function loadState(){
+  try{
+    var raw = localStorage.getItem(STORE_KEY);
+    return raw ? JSON.parse(raw) : clone(defaultState);
+  }catch(e){
+    return clone(defaultState);
+  }
+}
+function saveState(){ localStorage.setItem(STORE_KEY, JSON.stringify(state)); }
+function currentJob(){ return state.scenarios.filter(function(s){return s.id === state.scenario;})[0]; }
+
+function estimatedBiweekly(job){
+  var grossBiweekly = job.hourly * job.hours * 2;
+  var estimated = grossBiweekly * (1 - job.deductionRate / 100);
+  return job.manualNetOn === "yes" ? num(job.manualBiweeklyNet) : estimated;
+}
+function estimatedGrossMonthly(job){ return job.hourly * job.hours * 52 / 12; }
+
+function renderScenarioStrip(){
+  var strip = $("scenarioStrip");
+  strip.innerHTML = "";
+  state.scenarios.forEach(function(s){
+    var btn = document.createElement("button");
+    btn.type = "button";
+    btn.className = "scenario-btn" + (s.id === state.scenario ? " active" : "");
+    btn.textContent = s.name;
+    btn.setAttribute("data-scenario", s.id);
+    strip.appendChild(btn);
+  });
+}
+
+function setJobFields(){
+  var job = currentJob();
+  $("jobName").value = job.name;
+  $("hourlyPay").value = job.hourly;
+  $("hoursWeek").value = job.hours;
+  $("deductionRate").value = job.deductionRate;
+  $("manualNetOn").value = job.manualNetOn;
+  $("manualBiweeklyNet").value = Math.round(job.manualBiweeklyNet);
+  $("homeHourly").value = job.hourly;
+  $("homeHours").value = job.hours;
+  $("homeDeduction").value = job.deductionRate;
+  $("homeBiweeklyNet").value = Math.round(estimatedBiweekly(job));
+}
+
+function syncJobFields(source, field){
+  var job = currentJob();
+  if(source === "home"){
+    job.hourly = num($("homeHourly").value);
+    job.hours = num($("homeHours").value);
+    job.deductionRate = num($("homeDeduction").value);
+
+    if(field === "homeBiweeklyNet"){
+      job.manualBiweeklyNet = num($("homeBiweeklyNet").value);
+      job.manualNetOn = "yes";
+    } else {
+      job.manualNetOn = "no";
+      job.manualBiweeklyNet = Math.round(estimatedBiweekly(job));
+    }
+  } else {
+    job.name = $("jobName").value || job.name;
+    job.hourly = num($("hourlyPay").value);
+    job.hours = num($("hoursWeek").value);
+    job.deductionRate = num($("deductionRate").value);
+    job.manualNetOn = $("manualNetOn").value;
+    if(job.manualNetOn === "yes"){
+      job.manualBiweeklyNet = num($("manualBiweeklyNet").value);
+    } else {
+      job.manualBiweeklyNet = Math.round(estimatedBiweekly(job));
+    }
+  }
+  saveState();
+}
+
+function setOtherInputs(){
+  Object.keys(state.inputs).forEach(function(k){
+    if($(k)) $(k).value = state.inputs[k];
+  });
+}
+
+function syncOtherInputs(){
+  Object.keys(state.inputs).forEach(function(k){
+    if($(k)) state.inputs[k] = $(k).type === "number" ? num($(k).value) : $(k).value;
+  });
+  saveState();
+}
+
+function renderExpenses(){
+  var list = $("expenseList");
+  list.innerHTML = "";
+  state.expenses.forEach(function(ex, i){
+    var item = document.createElement("div");
+    item.className = "expense-item";
+    item.setAttribute("data-expense-index", i);
+    item.innerHTML =
+      '<input value="'+escapeHtml(ex.name)+'" aria-label="Expense name" data-field="name">' +
+      '<div class="money-input"><span>$</span><input type="number" value="'+ex.amount+'" aria-label="Amount" data-field="amount"></div>' +
+      '<button type="button" class="remove">×</button>' +
+      '<select data-field="timing">' +
+        '<option value="split" '+(ex.timing==="split"?"selected":"")+'>Split</option>' +
+        '<option value="check1" '+(ex.timing==="check1"?"selected":"")+'>Check 1</option>' +
+        '<option value="check2" '+(ex.timing==="check2"?"selected":"")+'>Check 2</option>' +
+      '</select>' +
+      '<select data-field="category">' +
+        '<option value="bill" '+(ex.category==="bill"?"selected":"")+'>Bill</option>' +
+        '<option value="mom" '+(ex.category==="mom"?"selected":"")+'>Mom Debt</option>' +
+        '<option value="personal" '+(ex.category==="personal"?"selected":"")+'>Personal Debt</option>' +
+        '<option value="emergency" '+(ex.category==="emergency"?"selected":"")+'>Emergency</option>' +
+        '<option value="travel" '+(ex.category==="travel"?"selected":"")+'>Travel</option>' +
+        '<option value="carfund" '+(ex.category==="carfund"?"selected":"")+'>Car Fund</option>' +
+        '<option value="move" '+(ex.category==="move"?"selected":"")+'>Move Fund</option>' +
+      '</select>';
+    list.appendChild(item);
+  });
+}
+
+function escapeHtml(str){
+  return String(str).replace(/[&<>"']/g,function(m){return {"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"}[m];});
+}
+
+
+function renderIncomeEntries(){
+  var list = $("incomeList");
+  if(!list) return;
+  list.innerHTML = "";
+  state.incomeEntries = state.incomeEntries || [];
+  state.incomeEntries.forEach(function(entry, i){
+    entry.useActual = entry.useActual || "no";
+    ["actualMom","actualPersonal","actualEmergency","actualMove","actualTravel","actualCar","actualBuffer"].forEach(function(k){ if(entry[k] === undefined) entry[k] = 0; });
+
+    var p = windfallPercents();
+    var amt = num(entry.amount);
+    var suggested = {
+      mom: entry.allocation === "split" ? amt * p.mom / 100 : entry.allocation === "mom" ? amt : 0,
+      personal: entry.allocation === "split" ? amt * p.personal / 100 : entry.allocation === "personal" ? amt : 0,
+      emergency: entry.allocation === "split" ? amt * p.emergency / 100 : entry.allocation === "emergency" ? amt : 0,
+      move: entry.allocation === "split" ? amt * p.move / 100 : entry.allocation === "move" ? amt : 0,
+      travel: entry.allocation === "split" ? amt * p.travel / 100 : entry.allocation === "travel" ? amt : 0,
+      car: entry.allocation === "split" ? amt * p.car / 100 : entry.allocation === "carfund" ? amt : 0,
+      buffer: entry.allocation === "buffer" ? amt : 0
+    };
+
+    var card = document.createElement("div");
+    card.className = "income-card";
+    card.setAttribute("data-income-index", i);
+    card.innerHTML =
+      '<div class="income-top">' +
+        '<input value="'+escapeHtml(entry.name)+'" aria-label="Income name" data-income-field="name">' +
+        '<div class="money-input"><span>$</span><input type="number" value="'+entry.amount+'" aria-label="Amount" data-income-field="amount"></div>' +
+        '<button type="button" class="remove income-remove">×</button>' +
+      '</div>' +
+      '<div class="income-controls">' +
+        '<select data-income-field="frequency">' +
+          '<option value="one-time" '+(entry.frequency==="one-time"?"selected":"")+'>One-Time</option>' +
+          '<option value="weekly" '+(entry.frequency==="weekly"?"selected":"")+'>Weekly</option>' +
+          '<option value="biweekly" '+(entry.frequency==="biweekly"?"selected":"")+'>Biweekly</option>' +
+          '<option value="monthly" '+(entry.frequency==="monthly"?"selected":"")+'>Monthly</option>' +
+        '</select>' +
+        '<select data-income-field="allocation">' +
+          '<option value="buffer" '+(entry.allocation==="buffer"?"selected":"")+'>Buffer</option>' +
+          '<option value="split" '+(entry.allocation==="split"?"selected":"")+'>Suggested Split</option>' +
+          '<option value="mom" '+(entry.allocation==="mom"?"selected":"")+'>Mom Debt</option>' +
+          '<option value="personal" '+(entry.allocation==="personal"?"selected":"")+'>Personal Debt</option>' +
+          '<option value="emergency" '+(entry.allocation==="emergency"?"selected":"")+'>Emergency</option>' +
+          '<option value="travel" '+(entry.allocation==="travel"?"selected":"")+'>Travel</option>' +
+          '<option value="carfund" '+(entry.allocation==="carfund"?"selected":"")+'>Car Fund</option>' +
+          '<option value="move" '+(entry.allocation==="move"?"selected":"")+'>Move Fund</option>' +
+        '</select>' +
+        '<select data-income-field="useActual">' +
+          '<option value="no" '+(entry.useActual==="no"?"selected":"")+'>Use Suggestion</option>' +
+          '<option value="yes" '+(entry.useActual==="yes"?"selected":"")+'>Use My Amounts</option>' +
+        '</select>' +
+        '<button type="button" class="mini-btn apply-suggestion">Apply Suggestion</button>' +
+      '</div>' +
+      '<div class="suggestion">' +
+        '<strong>Suggested:</strong> Mom '+money(suggested.mom)+' · Personal '+money(suggested.personal)+' · Emergency '+money(suggested.emergency)+' · Move '+money(suggested.move)+' · Travel '+money(suggested.travel)+' · Car '+money(suggested.car)+' · Buffer '+money(suggested.buffer) +
+      '</div>' +
+      '<div class="alloc-grid">' +
+        '<label>Mom <div class="money-input"><span>$</span><input type="number" value="'+entry.actualMom+'" data-income-field="actualMom"></div></label>' +
+        '<label>Personal <div class="money-input"><span>$</span><input type="number" value="'+entry.actualPersonal+'" data-income-field="actualPersonal"></div></label>' +
+        '<label>Emergency <div class="money-input"><span>$</span><input type="number" value="'+entry.actualEmergency+'" data-income-field="actualEmergency"></div></label>' +
+        '<label>Move <div class="money-input"><span>$</span><input type="number" value="'+entry.actualMove+'" data-income-field="actualMove"></div></label>' +
+        '<label>Travel <div class="money-input"><span>$</span><input type="number" value="'+entry.actualTravel+'" data-income-field="actualTravel"></div></label>' +
+        '<label>Car <div class="money-input"><span>$</span><input type="number" value="'+entry.actualCar+'" data-income-field="actualCar"></div></label>' +
+        '<label>Buffer <div class="money-input"><span>$</span><input type="number" value="'+entry.actualBuffer+'" data-income-field="actualBuffer"></div></label>' +
+      '</div>';
+    list.appendChild(card);
+  });
+}
+
+function monthlyValue(entry){
+  var amount = num(entry.amount);
+  if(entry.frequency === "weekly") return amount * 4.333;
+  if(entry.frequency === "biweekly") return amount * 2;
+  if(entry.frequency === "monthly") return amount;
+  return 0;
+}
+
+function oneTimeValue(entry){
+  return entry.frequency === "one-time" ? num(entry.amount) : 0;
+}
+
+
+function windfallPercents(){
+  var personalLeft = Math.max(0, num(state.inputs.personalDebtStart));
+  var momLeft = Math.max(0, num(state.inputs.momDebtStart));
+  var mode = state.inputs.windfallMode || "debt";
+
+  if(mode === "custom"){
+    return {
+      mom: num(state.inputs.splitMom || 50),
+      personal: num(state.inputs.splitPersonal || 25),
+      emergency: num(state.inputs.splitEmergency || 15),
+      move: 0,
+      travel: num(state.inputs.splitTravel || 5),
+      car: num(state.inputs.splitCar || 5)
+    };
+  }
+
+  if(mode === "move"){
+    return { mom: 20, personal: 10, emergency: 25, move: 30, travel: 5, car: 10 };
+  }
+
+  if(mode === "balanced"){
+    return { mom: 40, personal: 20, emergency: 20, move: 10, travel: 5, car: 5 };
+  }
+
+  // Debt attack mode: shifts automatically as debts disappear.
+  if(personalLeft > 0){
+    return { mom: 50, personal: 25, emergency: 15, move: 5, travel: 5, car: 0 };
+  }
+  if(momLeft > 0){
+    return { mom: 60, personal: 0, emergency: 20, move: 10, travel: 5, car: 5 };
+  }
+  return { mom: 0, personal: 0, emergency: 40, move: 30, travel: 10, car: 20 };
+}
+
+function applySplit(acc, amount){
+  var p = windfallPercents();
+  acc.mom += amount * p.mom / 100;
+  acc.personal += amount * p.personal / 100;
+  acc.emergency += amount * p.emergency / 100;
+  acc.move += amount * p.move / 100;
+  acc.travel += amount * p.travel / 100;
+  acc.car += amount * p.car / 100;
+}
+
+
+function suggestedIncomeAllocation(entry, amountForSix){
+  var allocation = entry.allocation || "buffer";
+  var acc = {mom:0, personal:0, emergency:0, travel:0, car:0, move:0, buffer:0};
+
+  if(entry.useActual === "yes"){
+    acc.mom += num(entry.actualMom);
+    acc.personal += num(entry.actualPersonal);
+    acc.emergency += num(entry.actualEmergency);
+    acc.move += num(entry.actualMove);
+    acc.travel += num(entry.actualTravel);
+    acc.car += num(entry.actualCar);
+    acc.buffer += num(entry.actualBuffer);
+    return acc;
+  }
+
+  if(allocation === "split"){
+    applySplit(acc, amountForSix);
+  } else if(allocation === "mom") acc.mom += amountForSix;
+  else if(allocation === "personal") acc.personal += amountForSix;
+  else if(allocation === "emergency") acc.emergency += amountForSix;
+  else if(allocation === "travel") acc.travel += amountForSix;
+  else if(allocation === "carfund") acc.car += amountForSix;
+  else if(allocation === "move") acc.move += amountForSix;
+  else acc.buffer += amountForSix;
+
+  return acc;
+}
+
+function incomeTotals(){
+  var entries = state.incomeEntries || [];
+  return entries.reduce(function(acc, entry){
+    acc.monthly += monthlyValue(entry);
+    acc.oneTime += oneTimeValue(entry);
+    var recurring = monthlyValue(entry);
+    var once = oneTimeValue(entry);
+    var amountForSix = recurring * 6 + once;
+    var applied = suggestedIncomeAllocation(entry, amountForSix);
+    acc.mom += applied.mom;
+    acc.personal += applied.personal;
+    acc.emergency += applied.emergency;
+    acc.travel += applied.travel;
+    acc.car += applied.car;
+    acc.move += applied.move;
+    acc.buffer += applied.buffer;
+    return acc;
+  }, {monthly:0, oneTime:0, buffer:0, mom:0, personal:0, emergency:0, travel:0, car:0, move:0});
+}
+
+function tableRow(a,b){ return '<div class="table-row"><div>'+a+'</div><div>'+b+'</div></div>'; }
+
+function monthsTo(balance, monthly){
+  if(balance <= 0) return "Paid";
+  if(monthly <= 0) return "No payoff";
+  return Math.ceil(balance / monthly) + " mo";
+}
+
+function bar(label, value, goal){
+  var pct = goal > 0 ? Math.min(100, Math.max(0, value / goal * 100)) : 0;
+  return '<div class="progress-block"><div class="progress-label"><span>'+label+'</span><span>'+Math.round(pct)+'%</span></div><div class="progress"><div class="fill" style="width:'+pct+'%"></div></div></div>';
+}
+
+function categoryMonthly(cat){
+  return state.expenses.filter(function(e){return e.category === cat;}).reduce(function(sum,e){return sum+num(e.amount);},0);
+}
+
+function calculate(){
+  syncOtherInputs();
+
+  var job = currentJob();
+  var biweeklyNet = estimatedBiweekly(job);
+  var jobMonthly = biweeklyNet * 2;
+  var baseExpenses = state.expenses.reduce(function(sum,ex){return sum + num(ex.amount);},0);
+
+  var tradingMonthly = 0;
+  if(state.inputs.tradingOn === "yes"){
+    var gross = state.inputs.profitDay * state.inputs.tradeDays * 4.333;
+    var afterPayout = gross * (state.inputs.payoutSplit / 100);
+    var afterWinRate = afterPayout * (state.inputs.winRate / 100);
+    tradingMonthly = afterWinRate * (1 - state.inputs.haircut / 100);
+  }
+
+  var ptMonthly = 0;
+  if(state.inputs.partTimeOn === "yes"){
+    ptMonthly = state.inputs.ptFlat > 0 ? state.inputs.ptFlat : state.inputs.ptRate * state.inputs.ptHours * 4.333;
+  }
+
+  var incTotals = incomeTotals();
+  var totalIncome = jobMonthly + tradingMonthly + ptMonthly + incTotals.monthly;
+  var surplus = totalIncome - baseExpenses;
+  var extra = Math.max(0, surplus);
+
+  var pcts = windfallPercents();
+  var momMonthly = categoryMonthly("mom") + extra * pcts.mom / 100;
+  var personalMonthly = categoryMonthly("personal") + extra * pcts.personal / 100;
+  var emergencyMonthly = categoryMonthly("emergency") + extra * pcts.emergency / 100;
+  var travelMonthly = categoryMonthly("travel") + extra * pcts.travel / 100;
+  var carMonthly = categoryMonthly("carfund") + extra * pcts.car / 100;
+  var moveMonthly = categoryMonthly("move") + extra * pcts.move / 100;
+
+  var momPaid6 = momMonthly * 6 + incTotals.mom;
+  var personalPaid6 = personalMonthly * 6 + incTotals.personal;
+  var emergency6 = state.inputs.emergencyStart + state.inputs.closingCushion + emergencyMonthly * 6 + incTotals.emergency;
+  var travel6 = state.inputs.travelStart + travelMonthly * 6 + incTotals.travel;
+  var car6 = state.inputs.carStart + carMonthly * 6 + incTotals.car;
+  var buffer6 = Math.max(0, surplus) * 6 + incTotals.buffer;
+  var move6 = state.inputs.moveStart + moveMonthly * 6 + emergency6 + incTotals.move;
+
+  $("activeScenarioLabel").textContent = job.name;
+  $("monthlyIncome").textContent = money(totalIncome);
+  $("monthlyExpenses").textContent = money(baseExpenses);
+  $("monthlySurplus").textContent = money(surplus);
+  $("expenseTotalLabel").textContent = money(baseExpenses);
+  $("biweeklyAmount").textContent = money(biweeklyNet) + "/check";
+
+  var safety = surplus >= 250 ? "Safe" : surplus >= 0 ? "Tight" : "Negative";
+  $("safetyStatus").textContent = safety;
+  if($("bufferStatus")) $("bufferStatus").textContent = "Navy Federal / Buffer Projection: " + money(buffer6) + " after 6 months, before any manual withdrawals.";
+  $("statusCard").className = "status " + (surplus >= 250 ? "good" : surplus >= 0 ? "tight" : "bad");
+  $("statusCard").textContent = surplus >= 250 ? 
+    "Safe. This is your normal 2-check month buffer. Transfer leftover buffer to Navy Federal." :
+    surplus >= 0 ? "Tight. Covered, but keep the buffer untouched." :
+    "Negative. Adjust bills or add income before increasing payments.";
+
+  $("momDebt6").textContent = money(Math.max(0, state.inputs.momDebtStart - momPaid6));
+  $("personalDebt6").textContent = money(Math.max(0, state.inputs.personalDebtStart - personalPaid6));
+  $("emergency6").textContent = money(emergency6);
+  $("moveCushion6").textContent = money(move6);
+  $("travel6").textContent = money(travel6);
+  $("car6").textContent = money(car6);
+
+  $("goalBars").innerHTML =
+    bar("Mom debt paid", momPaid6, state.inputs.momGoal) +
+    bar("Personal debt paid", personalPaid6, state.inputs.personalGoal) +
+    bar("Emergency savings", emergency6, state.inputs.emergencyGoal) +
+    bar("Move cushion", move6, state.inputs.moveGoal);
+
+  $("timelineTable").innerHTML =
+    tableRow("Mom payoff timeline", monthsTo(state.inputs.momDebtStart, momMonthly)) +
+    tableRow("Personal debt payoff timeline", monthsTo(state.inputs.personalDebtStart, personalMonthly)) +
+    tableRow("Emergency goal timeline", monthsTo(Math.max(0,state.inputs.emergencyGoal-state.inputs.emergencyStart), emergencyMonthly)) +
+    tableRow("Move cushion timeline", monthsTo(Math.max(0,state.inputs.moveGoal-state.inputs.moveStart), moveMonthly + emergencyMonthly));
+
+  var check1 = [], check2 = [];
+  state.expenses.forEach(function(ex){
+    var amount = num(ex.amount);
+    if(ex.timing === "check1") check1.push([ex.name, amount]);
+    else if(ex.timing === "check2") check2.push([ex.name, amount]);
+    else { check1.push([ex.name, amount/2]); check2.push([ex.name, amount/2]); }
+  });
+
+  var c1Total = check1.reduce(function(s,r){return s+r[1];},0);
+  var c2Total = check2.reduce(function(s,r){return s+r[1];},0);
+
+  $("checkOneTable").innerHTML = tableRow("Check 1 total", money(c1Total)) + check1.map(function(r){return tableRow(r[0], money(r[1]));}).join("") + tableRow("Navy Federal Buffer", money(Math.max(0, biweeklyNet-c1Total)));
+  $("checkTwoTable").innerHTML = tableRow("Check 2 total", money(c2Total)) + check2.map(function(r){return tableRow(r[0], money(r[1]));}).join("") + tableRow("Navy Federal Buffer", money(Math.max(0, biweeklyNet-c2Total)));
+  $("navyNote").textContent = "Navy Federal note: deposit biweekly leftover buffer here. Until car insurance begins, keep the $400/month car insurance hold in this account too.";
+
+  var readinessParts = [
+    Math.min(100, momPaid6 / Math.max(1,state.inputs.momGoal) * 100),
+    Math.min(100, personalPaid6 / Math.max(1,state.inputs.personalGoal) * 100),
+    Math.min(100, emergency6 / Math.max(1,state.inputs.emergencyGoal) * 100),
+    Math.min(100, move6 / Math.max(1,state.inputs.moveGoal) * 100)
+  ];
+  var readiness = Math.round(readinessParts.reduce(function(a,b){return a+b;},0)/readinessParts.length);
+  $("readiness").textContent = readiness + "%";
+  $("readinessSmall").textContent = readiness + "%";
+  $("readinessText").textContent = readiness >= 75 ? "Move-ready energy. Debt, savings, and cushion are lining up." : readiness >= 45 ? "Momentum is real. Stay boring and consistent." : "Foundation phase. Keep income stable and protect the buffer.";
+
+  $("predictionTable").innerHTML =
+    tableRow("Mom paid in 6 months", money(momPaid6)) +
+    tableRow("Personal debt paid in 6 months", money(personalPaid6)) +
+    tableRow("Emergency in 6 months", money(emergency6)) +
+    tableRow("Travel fund in 6 months", money(travel6)) +
+    tableRow("Car fund in 6 months", money(car6)) +
+    tableRow("Move cushion in 6 months", money(move6)) +
+    tableRow("Trading add-on / month", money(tradingMonthly)) +
+    tableRow("Part-time add-on / month", money(ptMonthly)) +
+    tableRow("Windfall mode", (state.inputs.windfallMode || "debt")) +
+    tableRow("Extra paycheck value", money(biweeklyNet));
+
+  if($("incomeSummaryTable")){
+    $("incomeSummaryTable").innerHTML =
+      tableRow("Monthly extra income", money(incTotals.monthly)) +
+      tableRow("One-time extra income", money(incTotals.oneTime)) +
+      tableRow("6-mo buffer additions", money(incTotals.buffer)) +
+      tableRow("6-mo debt/savings additions", money(incTotals.mom + incTotals.personal + incTotals.emergency + incTotals.travel + incTotals.car + incTotals.move));
+  }
+
+var assetsNow = num(state.inputs.emergencyStart) + num(state.inputs.travelStart) + num(state.inputs.carStart) + num(state.inputs.moveStart) + num(state.inputs.closingCushion);
+  var debtNow = num(state.inputs.momDebtStart) + num(state.inputs.personalDebtStart);
+  var assets6 = emergency6 + travel6 + car6 + move6;
+  var debt6 = Math.max(0, state.inputs.momDebtStart - momPaid6) + Math.max(0, state.inputs.personalDebtStart - personalPaid6);
+
+  if($("totalAssets")) $("totalAssets").textContent = money(assetsNow);
+  if($("totalDebt")) $("totalDebt").textContent = money(debtNow);
+  if($("netWorthNow")) $("netWorthNow").textContent = money(assetsNow - debtNow);
+  if($("netWorth6")) $("netWorth6").textContent = money(assets6 - debt6);
+
+  if($("cashFlowTable")){
+    var cashRows = "";
+    var runningBuffer = Math.max(0, num(state.inputs.closingCushion));
+    for(var m=1; m<=6; m++){
+      runningBuffer += Math.max(0, surplus) + incTotals.buffer/6;
+      cashRows += tableRow("Month " + m + " projected buffer", money(runningBuffer));
+    }
+    $("cashFlowTable").innerHTML = cashRows;
+  }
+
+    var payout = state.inputs.payoutAmount;
+  var wp = windfallPercents();
+  $("payoutSplitTable").innerHTML =
+    tableRow("Mom Debt", money(payout * wp.mom / 100)) +
+    tableRow("Personal Debt", money(payout * wp.personal / 100)) +
+    tableRow("Emergency", money(payout * wp.emergency / 100)) +
+    tableRow("Move Fund", money(payout * wp.move / 100)) +
+    tableRow("Travel", money(payout * wp.travel / 100)) +
+    tableRow("Car Fund", money(payout * wp.car / 100));
+
+  if($("windfallRuleTable")){
+    $("windfallRuleTable").innerHTML =
+      tableRow("Mom Debt", wp.mom + "%") +
+      tableRow("Personal Debt", wp.personal + "%") +
+      tableRow("Emergency", wp.emergency + "%") +
+      tableRow("Move Fund", wp.move + "%") +
+      tableRow("Travel", wp.travel + "%") +
+      tableRow("Car Fund", wp.car + "%");
+  }
+}
+
+function renderAll(){
+  renderScenarioStrip();
+  renderExpenses();
+  renderIncomeEntries();
+  setJobFields();
+  setOtherInputs();
+  calculate();
+}
+
+document.addEventListener("DOMContentLoaded", function(){
+  renderAll();
+
+  document.body.addEventListener("click", function(e){
+    var nav = e.target.closest(".nav");
+    if(nav){
+      var view = nav.getAttribute("data-view");
+      document.querySelectorAll(".nav").forEach(function(b){ b.classList.remove("active"); });
+      nav.classList.add("active");
+      document.querySelectorAll(".view").forEach(function(v){ v.classList.remove("active"); });
+      var target = $(view);
+      if(target) target.classList.add("active");
+      return;
+    }
+
+    var scenarioBtn = e.target.closest(".scenario-btn");
+    if(scenarioBtn){
+      state.scenario = scenarioBtn.getAttribute("data-scenario");
+      saveState();
+      renderAll();
+      return;
+    }
+
+    var applySuggestion = e.target.closest(".apply-suggestion");
+    if(applySuggestion){
+      var incCard = applySuggestion.closest(".income-card");
+      var incIdx = Number(incCard.getAttribute("data-income-index"));
+      var entry = state.incomeEntries[incIdx];
+      var amountForOne = num(entry.amount);
+      var temp = suggestedIncomeAllocation(Object.assign({}, entry, {useActual:"no"}), amountForOne);
+      entry.actualMom = Math.round(temp.mom);
+      entry.actualPersonal = Math.round(temp.personal);
+      entry.actualEmergency = Math.round(temp.emergency);
+      entry.actualMove = Math.round(temp.move);
+      entry.actualTravel = Math.round(temp.travel);
+      entry.actualCar = Math.round(temp.car);
+      entry.actualBuffer = Math.round(temp.buffer);
+      entry.useActual = "yes";
+      saveState();
+      renderIncomeEntries();
+      calculate();
+      return;
+    }
+
+    var incomeRemove = e.target.closest(".income-remove");
+    if(incomeRemove){
+      var incomeItem = incomeRemove.closest(".income-item");
+      var incomeIdx = Number(incomeItem.getAttribute("data-income-index"));
+      state.incomeEntries.splice(incomeIdx,1);
+      saveState();
+      renderIncomeEntries();
+      calculate();
+      return;
+    }
+
+    var remove = e.target.closest(".remove");
+    if(remove){
+      var item = remove.closest(".expense-item");
+      var idx = Number(item.getAttribute("data-expense-index"));
+      state.expenses.splice(idx,1);
+      saveState();
+      renderExpenses();
+      calculate();
+      return;
+    }
+
+    var preset = e.target.closest(".mini-btn");
+    if(preset){
+      var p = preset.getAttribute("data-preset");
+      var map = {
+        bill: { name: "New Bill", amount: 0, timing: "split", category: "bill" },
+        debt: { name: "New Debt Payment", amount: 0, timing: "split", category: "personal" },
+        savings: { name: "New Savings Fund", amount: 0, timing: "split", category: "emergency" },
+        car: { name: "New Car Expense", amount: 0, timing: "split", category: "carfund" }
+      };
+      state.expenses.push(map[p]);
+      saveState();
+      renderExpenses();
+      calculate();
+      return;
+    }
+
+    if(e.target.id === "addExpenseBtn"){
+      state.expenses.push({ name: "New Expense", amount: 0, timing: "split", category: "bill" });
+      saveState();
+      renderExpenses();
+      calculate();
+      return;
+    }
+
+    if(e.target.id === "recalcEstimateBtn"){
+      var job = currentJob();
+      job.manualNetOn = "no";
+      job.manualBiweeklyNet = Math.round(estimatedBiweekly(job));
+      saveState();
+      setJobFields();
+      calculate();
+      return;
+    }
+
+    if(e.target.id === "addIncomeBtn"){
+      state.incomeEntries = state.incomeEntries || [];
+      state.incomeEntries.push({ name: "New Income", amount: 0, frequency: "one-time", allocation: "split", useActual: "no", actualMom: 0, actualPersonal: 0, actualEmergency: 0, actualMove: 0, actualTravel: 0, actualCar: 0, actualBuffer: 0 });
+      saveState();
+      renderIncomeEntries();
+      calculate();
+      return;
+    }
+
+    if(e.target.id === "resetBtn"){
+      if(confirm("Reset dashboard to default plan?")){
+        localStorage.removeItem(STORE_KEY);
+        state = loadState();
+        renderAll();
+      }
+    }
+  });
+
+  document.body.addEventListener("input", handleInput);
+  document.body.addEventListener("change", handleInput);
+});
+
+function handleInput(e){
+  var el = e.target;
+  if(!el || !el.id && !el.closest(".expense-item")) return;
+
+  if(["homeHourly","homeHours","homeDeduction","homeBiweeklyNet"].indexOf(el.id) >= 0){
+    syncJobFields("home", el.id);
+    setJobFields();
+    calculate();
+    return;
+  }
+
+  if(["jobName","hourlyPay","hoursWeek","deductionRate","manualNetOn","manualBiweeklyNet"].indexOf(el.id) >= 0){
+    syncJobFields("pay");
+    renderScenarioStrip();
+    setJobFields();
+    calculate();
+    return;
+  }
+
+  var incomeItem = el.closest(".income-item");
+  if(incomeItem){
+    var incomeIdx = Number(incomeItem.getAttribute("data-income-index"));
+    var incomeField = el.getAttribute("data-income-field");
+    if(incomeField){
+      state.incomeEntries[incomeIdx][incomeField] = incomeField === "amount" ? num(el.value) : el.value;
+      saveState();
+      calculate();
+    }
+    return;
+  }
+
+  var expenseItem = el.closest(".expense-item");
+  if(expenseItem){
+    var idx = Number(expenseItem.getAttribute("data-expense-index"));
+    var field = el.getAttribute("data-field");
+    if(field){
+      state.expenses[idx][field] = field === "amount" ? num(el.value) : el.value;
+      saveState();
+      calculate();
+    }
+    return;
+  }
+
+  calculate();
+}
+
+})();
+</script>
+</body>
+</html>
